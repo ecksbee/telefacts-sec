@@ -1,9 +1,7 @@
 package main
 
-import (
-	"ecksbee.com/telefacts-sec/internal/names"
-)
+// "ecksbee.com/telefacts-sec/pkg/names"
 
 func main() {
-	names.MergeNames()
+	// names.MergeNames()
 }

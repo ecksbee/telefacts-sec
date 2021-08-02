@@ -1,31 +1,16 @@
 package names
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
-	"net/http"
+
+	"ecksbee.com/telefacts-sec/internal/actions"
 )
 
-func Scrape(url string) ([]byte, error) {
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	var buffer bytes.Buffer
-	_, err = io.Copy(&buffer, resp.Body)
-	if err != nil {
-		return nil, err
-	}
-	return buffer.Bytes(), nil
-}
-
-func ScrapeNames() (map[string]map[string]string, error) {
+func ScrapeNames(throttle func(string)) (map[string]map[string]string, error) {
 	tickerURL := `https://www.sec.gov/files/company_tickers.json`
 	ret := make(map[string]map[string]string)
-	b, err := Scrape(tickerURL)
+	b, err := actions.Scrape(tickerURL, throttle)
 	if err != nil {
 		return ret, err
 	}
