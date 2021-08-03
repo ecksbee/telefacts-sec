@@ -26,7 +26,7 @@ const calExt = "_cal.xml"
 const labExt = "_lab.xml"
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
 
-func Import(filingURL string, workingDir string, throttle func(string)) error {
+func Scrape(filingURL string, workingDir string, throttle func(string)) error {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
 		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
@@ -47,7 +47,7 @@ func Import(filingURL string, workingDir string, throttle func(string)) error {
 	if len(items) <= 0 || err != nil {
 		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
-	schemaItem, err := getSchemaFromFilingItems(items)
+	schemaItem, err := getSchemaFromFilingItems(items) //todo scrape and unzip .zip filing item
 	if err != nil {
 		return err
 	}
