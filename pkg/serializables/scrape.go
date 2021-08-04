@@ -9,6 +9,7 @@ import (
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
+	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
 type filingItem struct {
@@ -26,7 +27,7 @@ const calExt = "_cal.xml"
 const labExt = "_lab.xml"
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
 
-func Scrape(filingURL string, workingDir string, throttle func(string)) error {
+func Scrape(filingURL string, dir string, throttle func(string)) error {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
 		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
@@ -57,6 +58,21 @@ func Scrape(filingURL string, workingDir string, throttle func(string)) error {
 	if len(ticker) <= 0 {
 		return fmt.Errorf("ticker symbol not found")
 	}
+	instanceItem, err := getInstanceFromFilingItems(items, ticker)
+	if err != nil {
+		return err
+	}
+	underscore.VolumePath = dir
+	id, err := underscore.NewFolder(underscore.Underscore{
+		Entry:    instanceItem.Name,
+		Checksum: "",
+		Ixbrl:    "",
+		Note:     filingURL,
+	})
+	if err != nil {
+		return err
+	}
+	workingDir := path.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
 	go func() {
@@ -70,10 +86,6 @@ func Scrape(filingURL string, workingDir string, throttle func(string)) error {
 	}()
 	go func() {
 		defer wg.Done()
-		instanceItem, err := getInstanceFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
 		instance, err := actions.Scrape(filingURL+"/"+instanceItem.Name, throttle)
 		if err != nil {
 			return

@@ -19,11 +19,14 @@ func MergeNames(throttle func(string)) error {
 	merged := unmarshalled
 	for scrapedScheme, scrapedSchemeMap := range scraped {
 		for scrapedChardata, scrapedName := range scrapedSchemeMap {
+			if _, found := merged[scrapedScheme]; !found {
+				merged[scrapedScheme] = make(map[string]string)
+			}
 			merged[scrapedScheme][scrapedChardata] = scrapedName
 		}
 	}
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(merged)
-	actions.WriteFile("names.json", buffer.Bytes())
+	actions.WriteFile(namePath, buffer.Bytes())
 	return nil
 }

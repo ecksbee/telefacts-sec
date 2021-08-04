@@ -8,5 +8,8 @@ import (
 
 func TestMergeNames(t *testing.T) {
 	startSECThrottle()
-	names.MergeNames(throttle)
+	err := names.MergeNames(throttle)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
 }

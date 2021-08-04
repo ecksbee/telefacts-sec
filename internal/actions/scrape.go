@@ -6,9 +6,17 @@ import (
 	"net/http"
 )
 
+const USERAGENT = "ECKSBEE LLC admin@ecksbee.com"
+
 func Scrape(url string, throttle func(string)) ([]byte, error) {
 	throttle(url)
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("User-Agent", USERAGENT)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

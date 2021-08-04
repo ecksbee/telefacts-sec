@@ -10,13 +10,13 @@ import (
 var (
 	out       chan interface{} = make(chan interface{})
 	in        chan interface{} = make(chan interface{})
-	dur       time.Duration    = 1 * time.Second
+	dur       time.Duration    = 200 * time.Millisecond
 	throttled bool             = false
 )
 
 func startSECThrottle() {
 	if !throttled {
-		r8lmt.Throttler(out, in, dur, true)
+		r8lmt.Throttler(out, in, dur, false)
 		throttled = true
 	}
 }
