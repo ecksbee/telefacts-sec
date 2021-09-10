@@ -27,6 +27,5 @@ func MergeNames(throttle func(string)) error {
 	}
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(merged)
-	actions.WriteFile(namePath, buffer.Bytes())
-	return nil
+	return actions.WriteFile(namePath, buffer.Bytes())
 }
