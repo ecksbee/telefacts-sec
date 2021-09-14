@@ -1,65 +1,10 @@
 package serializables
 
 import (
-	"archive/zip"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
-
-func getInstanceFromOSfiles(files []os.FileInfo) (os.FileInfo, error) {
-	var xmls []os.FileInfo
-	for _, file := range files {
-		s := file.Name()
-		if file.IsDir() || filepath.Ext(s) != xmlExt {
-			continue
-		}
-		if s[len(s)-len(preExt):] == preExt {
-			continue
-		}
-		if s[len(s)-len(defExt):] == defExt {
-			continue
-		}
-		if s[len(s)-len(calExt):] == calExt {
-			continue
-		}
-		if s[len(s)-len(labExt):] == labExt {
-			continue
-		}
-		xmls = append(xmls, file)
-	}
-	if len(xmls) <= 0 {
-		return nil, fmt.Errorf("no instance found")
-	}
-	return xmls[0], nil
-}
-
-func getInstanceFromUnzipfiles(unzipFiles []*zip.File) (*zip.File, error) {
-	var xmls []*zip.File
-	for _, unzipFile := range unzipFiles {
-		if filepath.Ext(unzipFile.Name) == xmlExt {
-			s := unzipFile.Name
-			if s[len(s)-len(preExt):] == preExt {
-				continue
-			}
-			if s[len(s)-len(defExt):] == defExt {
-				continue
-			}
-			if s[len(s)-len(calExt):] == calExt {
-				continue
-			}
-			if s[len(s)-len(labExt):] == labExt {
-				continue
-			}
-			xmls = append(xmls, unzipFile)
-		}
-	}
-	if len(xmls) <= 0 {
-		return nil, fmt.Errorf("no instance found")
-	}
-	return xmls[0], nil
-}
 
 func getInstanceFromFilingItems(filingItems []filingItem, ticker string) (*filingItem, error) {
 	for _, f := range filingItems {

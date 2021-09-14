@@ -1,43 +1,10 @@
 package serializables
 
 import (
-	"archive/zip"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 )
-
-func getPresentationLinkbaseFromOSfiles(files []os.FileInfo) (os.FileInfo, error) {
-	var xmls []os.FileInfo
-	for _, file := range files {
-		s := file.Name()
-		if file.IsDir() || filepath.Ext(s) == "" {
-			continue
-		}
-		if s[len(s)-len(preExt):] == preExt {
-			xmls = append(xmls, file)
-		}
-	}
-	if len(xmls) <= 0 {
-		return nil, fmt.Errorf("no presentation linkbase found")
-	}
-	return xmls[0], nil
-}
-
-func getPresentationLinkbaseFromUnzipfiles(unzipFiles []*zip.File) (*zip.File, error) {
-	var xmls []*zip.File
-	for _, unzipFile := range unzipFiles {
-		s := unzipFile.Name
-		if s[len(s)-len(preExt):] == preExt {
-			xmls = append(xmls, unzipFile)
-		}
-	}
-	if len(xmls) <= 0 {
-		return nil, fmt.Errorf("no presentation linkbase found")
-	}
-	return xmls[0], nil
-}
 
 func getPresentationLinkbaseFromFilingItems(filingItems []filingItem, ticker string) (*filingItem, error) {
 	for _, f := range filingItems {
