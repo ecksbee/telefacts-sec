@@ -19,6 +19,7 @@ type filingItem struct {
 	Size         string `json:"size"`
 }
 
+const ixbrlExt = ".htm"
 const xmlExt = ".xml"
 const xsdExt = ".xsd"
 const preExt = "_pre.xml"
@@ -58,15 +59,21 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	if len(ticker) <= 0 {
 		return fmt.Errorf("ticker symbol not found")
 	}
-	instanceItem, err := getInstanceFromFilingItems(items, ticker)
-	if err != nil {
-		return err
+	var entry string
+	ixbrlItem, err := getIxbrlFileFromFilingItems(items, ticker)
+	if err != nil && err.Error() == "cannot identify a single ixbrl file" {
+		instance, err := getInstanceFromFilingItems(items, ticker)
+		if err != nil {
+			return err
+		}
+		entry = instance.Name
+	} else {
+		entry = ixbrlItem.Name
 	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry:    instanceItem.Name,
+		Entry:    ixbrlItem.Name,
 		Checksum: "",
-		Ixbrl:    "",
 		Note:     filingURL,
 	})
 	if err != nil {
@@ -86,12 +93,12 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	}()
 	go func() {
 		defer wg.Done()
-		instance, err := actions.Scrape(filingURL+"/"+instanceItem.Name, throttle)
+		entryFile, err := actions.Scrape(filingURL+"/"+entry, throttle)
 		if err != nil {
 			return
 		}
-		dest := path.Join(workingDir, instanceItem.Name)
-		err = actions.WriteFile(dest, instance)
+		dest := path.Join(workingDir, ixbrlItem.Name)
+		err = actions.WriteFile(dest, entryFile)
 	}()
 	go func() {
 		defer wg.Done()
