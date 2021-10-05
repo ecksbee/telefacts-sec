@@ -1,3 +1,5 @@
+github.com/ecksbee/telefacts v1.0.0 h1:I6g9Ce5CZbeiOfLb2uTlKRbmnzmQSOTge7NY7I7TcfQ=
+github.com/ecksbee/telefacts v1.0.0/go.mod h1:qMUL806rMY6C+Ba7JJNWMxZj/WFAOoYlQTjr6eSZkY0=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
