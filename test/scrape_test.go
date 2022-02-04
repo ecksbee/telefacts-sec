@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"ecksbee.com/telefacts-sec/pkg/serializables"
+	"ecksbee.com/telefacts-sec/pkg/throttle"
 )
 
 var (
@@ -12,7 +13,7 @@ var (
 )
 
 func TestAllScrapes(t *testing.T) {
-	startSECThrottle()
+	throttle.StartSECThrottle()
 	testScrapeGoFiler(t)
 	testScrapeThunderDome(t)
 	testScrapeWDesk(t)
@@ -21,7 +22,7 @@ func TestAllScrapes(t *testing.T) {
 func testScrapeGoFiler(t *testing.T) {
 	err := serializables.Scrape(
 		"https://www.sec.gov/Archives/edgar/data/843006/000165495420001999",
-		dir, throttle)
+		dir, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -30,7 +31,7 @@ func testScrapeGoFiler(t *testing.T) {
 func testScrapeThunderDome(t *testing.T) {
 	err := serializables.Scrape(
 		"https://www.sec.gov/Archives/edgar/data/69891/000143774920014395",
-		dir, throttle)
+		dir, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
@@ -39,7 +40,7 @@ func testScrapeThunderDome(t *testing.T) {
 func testScrapeWDesk(t *testing.T) {
 	err := serializables.Scrape(
 		"https://www.sec.gov/Archives/edgar/data/1445305/000144530520000124",
-		dir, throttle)
+		dir, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

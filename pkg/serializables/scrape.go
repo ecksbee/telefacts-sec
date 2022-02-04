@@ -59,21 +59,20 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	if len(ticker) <= 0 {
 		return fmt.Errorf("ticker symbol not found")
 	}
-	var entry string
-	ixbrlItem, err := getIxbrlFileFromFilingItems(items, ticker)
-	if err != nil && err.Error() == "cannot identify a single ixbrl file" {
-		instance, err := getInstanceFromFilingItems(items, ticker)
-		if err != nil {
-			return err
-		}
-		entry = instance.Name
-	} else {
-		entry = ixbrlItem.Name
+	instance, err := getInstanceFromFilingItems(items, ticker)
+	if err != nil {
+		return err
+	}
+	ixbrlItem, _ := getIxbrlFileFromFilingItems(items, ticker)
+	ixbrlName := ""
+	if ixbrlItem != nil {
+		ixbrlName = ixbrlItem.Name
 	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry:    ixbrlItem.Name,
+		Entry:    instance.Name,
 		Checksum: "",
+		Ixbrl:    ixbrlName,
 		Note:     filingURL,
 	})
 	if err != nil {
@@ -82,6 +81,19 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	workingDir := path.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
+	if ixbrlName != "" {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			ixbrlFile, err := actions.Scrape(filingURL+"/"+ixbrlName, throttle)
+			if err != nil {
+				return
+			}
+			// todo scrape images
+			dest := path.Join(workingDir, ixbrlName)
+			err = actions.WriteFile(dest, ixbrlFile)
+		}()
+	}
 	go func() {
 		defer wg.Done()
 		schema, err := actions.Scrape(filingURL+"/"+schemaItem.Name, throttle)
@@ -93,11 +105,11 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	}()
 	go func() {
 		defer wg.Done()
-		entryFile, err := actions.Scrape(filingURL+"/"+entry, throttle)
+		entryFile, err := actions.Scrape(filingURL+"/"+instance.Name, throttle)
 		if err != nil {
 			return
 		}
-		dest := path.Join(workingDir, ixbrlItem.Name)
+		dest := path.Join(workingDir, instance.Name)
 		err = actions.WriteFile(dest, entryFile)
 	}()
 	go func() {

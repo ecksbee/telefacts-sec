@@ -2,21 +2,20 @@ package names
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
-)
-
-var (
-	namePath = path.Join(".", "data", "/names.json")
 )
 
 func UnmarshalNames() (map[string]map[string]string, error) {
+	if NamePath == "" {
+		return nil, fmt.Errorf("empty NamePath")
+	}
 	names := make(map[string]map[string]string)
-	if _, err := os.Stat(namePath); os.IsNotExist(err) {
+	if _, err := os.Stat(NamePath); os.IsNotExist(err) {
 		return names, nil
 	}
-	b, err := ioutil.ReadFile(namePath)
+	b, err := ioutil.ReadFile(NamePath)
 	if err != nil {
 		return names, err
 	}
