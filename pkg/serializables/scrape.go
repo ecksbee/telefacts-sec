@@ -63,16 +63,22 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
-	ixbrlItem, _ := getIxbrlFileFromFilingItems(items, ticker)
-	ixbrlName := ""
-	if ixbrlItem != nil {
-		ixbrlName = ixbrlItem.Name
+	srcDoc, _ := getSourceDocumentFromFilingItems(items, ticker)
+	srcName := ""
+	if srcDoc != nil {
+		srcName = srcDoc.Name
 	}
+	srcFile, err := actions.Scrape(filingURL+"/"+srcName, throttle)
+	if err != nil {
+		return err
+	}
+	hasIXBRL := false
+	// inspect srcFile if it has ixbrl elements
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
 		Entry:    instance.Name,
 		Checksum: "",
-		Ixbrl:    ixbrlName,
+		Ixbrl:    srcName,
 		Note:     filingURL,
 	})
 	if err != nil {
@@ -81,17 +87,12 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	workingDir := path.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
-	if ixbrlName != "" {
+	if hasIXBRL {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			ixbrlFile, err := actions.Scrape(filingURL+"/"+ixbrlName, throttle)
-			if err != nil {
-				return
-			}
-			// todo scrape images
-			dest := path.Join(workingDir, ixbrlName)
-			err = actions.WriteFile(dest, ixbrlFile)
+			// persist srcfile if its IXBRL
+			// todo scrape images .jpg or .gif
 		}()
 	}
 	go func() {

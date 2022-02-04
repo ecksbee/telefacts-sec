@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func getIxbrlFileFromFilingItems(filingItems []filingItem, ticker string) (*filingItem, error) {
+func getSourceDocumentFromFilingItems(filingItems []filingItem, ticker string) (*filingItem, error) {
 	for _, f := range filingItems {
 		s := f.Name
 		ext := filepath.Ext(s)
@@ -16,5 +16,5 @@ func getIxbrlFileFromFilingItems(filingItems []filingItem, ticker string) (*fili
 			return &f, nil
 		}
 	}
-	return nil, fmt.Errorf("cannot identify a single ixbrl file")
+	return nil, fmt.Errorf("cannot identify source document")
 }
