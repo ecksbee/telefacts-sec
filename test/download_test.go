@@ -12,15 +12,15 @@ var (
 	dir = path.Join(".", "data")
 )
 
-func TestAllScrapes(t *testing.T) {
+func TestAllDownloads(t *testing.T) {
 	throttle.StartSECThrottle()
-	testScrapeGoFiler(t)
-	testScrapeThunderDome(t)
-	testScrapeWDesk(t)
+	testDownloadGoFiler(t)
+	testDownloadThunderDome(t)
+	testDownloadWDesk(t)
 }
 
-func testScrapeGoFiler(t *testing.T) {
-	err := serializables.Scrape(
+func testDownloadGoFiler(t *testing.T) {
+	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/843006/000165495420001999",
 		dir, throttle.Throttle)
 	if err != nil {
@@ -28,8 +28,8 @@ func testScrapeGoFiler(t *testing.T) {
 	}
 }
 
-func testScrapeThunderDome(t *testing.T) {
-	err := serializables.Scrape(
+func testDownloadThunderDome(t *testing.T) {
+	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/69891/000143774920014395",
 		dir, throttle.Throttle)
 	if err != nil {
@@ -37,8 +37,8 @@ func testScrapeThunderDome(t *testing.T) {
 	}
 }
 
-func testScrapeWDesk(t *testing.T) {
-	err := serializables.Scrape(
+func testDownloadWDesk(t *testing.T) {
+	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/1445305/000144530520000124",
 		dir, throttle.Throttle)
 	if err != nil {

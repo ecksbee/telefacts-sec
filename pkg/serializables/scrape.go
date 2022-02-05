@@ -1,47 +1,25 @@
 package serializables
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"path"
 	"regexp"
 	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
-	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
-type filingItem struct {
-	LastModified string `json:"last-modified"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Size         string `json:"size"`
-}
-
-const IX = "http://www.xbrl.org/2013/inlineXBRL"
-
-const ixbrlExt = ".htm"
-const xmlExt = ".xml"
-const xsdExt = ".xsd"
-const preExt = "_pre.xml"
-const defExt = "_def.xml"
-const calExt = "_cal.xml"
-const labExt = "_lab.xml"
-const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
-
-func getImageExts() [3]string {
-	return [3]string{".gif", ".jpg", ".jpeg"}
-}
-
-func Scrape(filingURL string, dir string, throttle func(string)) error {
+func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
-		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
+		return nil, fmt.Errorf("not an acceptable SEC address, " + filingURL)
 	}
 	body, err := actions.Scrape(filingURL+"/index.json", throttle)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	filing := struct {
 		Directory struct {
@@ -53,121 +31,118 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	err = json.Unmarshal(body, &filing)
 	items := filing.Directory.Item
 	if len(items) <= 0 || err != nil {
-		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
+		return nil, fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
 	schemaItem, err := getSchemaFromFilingItems(items)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	str := schemaItem.Name
 	x := strings.Index(str, "-")
 	ticker := str[:x]
 	if len(ticker) <= 0 {
-		return fmt.Errorf("ticker symbol not found")
+		return nil, fmt.Errorf("ticker symbol not found")
 	}
 	instance, err := getInstanceFromFilingItems(items, ticker)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	srcDoc, _ := getSourceDocumentFromFilingItems(items, ticker)
-	srcName := ""
-	if srcDoc != nil {
-		srcName = srcDoc.Name
-	}
-	srcFile, err := actions.Scrape(filingURL+"/"+srcName, throttle)
-	if err != nil {
-		return err
-	}
-	// todo we need an IXBRL parser
-	q := "//html/body//*[local-name()='header' and namespace-uri()='" + IX + "']//*[local-name()='resources' and namespace-uri()='" + IX + "']"
-	hasIXBRL := q == "//todo use q to determine if srcFile is an IXBRL file"
-	underscore.VolumePath = dir
-	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry:    instance.Name,
-		Checksum: "",
-		Ixbrl:    srcName,
-		Note:     filingURL,
-	})
-	if err != nil {
-		return err
-	}
-	workingDir := path.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
-	if hasIXBRL {
-		wg.Add(1)
-		// imgs := getImagesFromFilingItems(items)
-		go func() {
-			defer wg.Done()
-			dest := path.Join(workingDir, srcName)
-			err = actions.WriteFile(dest, srcFile)
-
-			// todo scrape images .jpg or .gif
-		}()
-	}
+	var (
+		schema        []byte
+		instanceBytes []byte
+		presentation  []byte
+		definition    []byte
+		calculation   []byte
+		label         []byte
+		preItem       *filingItem
+		defItem       *filingItem
+		calItem       *filingItem
+		labItem       *filingItem
+	)
 	go func() {
 		defer wg.Done()
-		schema, err := actions.Scrape(filingURL+"/"+schemaItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, schemaItem.Name)
-		err = actions.WriteFile(dest, schema)
+		targetUrl := filingURL + "/" + schemaItem.Name
+		schema, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
 		targetUrl := filingURL + "/" + instance.Name
-		dest := path.Join(workingDir, instance.Name)
-		err = scrapeAndWrite(targetUrl, dest, throttle)
+		instanceBytes, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		preItem, err := getPresentationLinkbaseFromFilingItems(items, ticker)
+		preItem, err = getPresentationLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
 		targetUrl := filingURL + "/" + preItem.Name
-		dest := path.Join(workingDir, preItem.Name)
-		err = scrapeAndWrite(targetUrl, dest, throttle)
+		presentation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		defItem, err := getDefinitionLinkbaseFromFilingItems(items, ticker)
+		defItem, err = getDefinitionLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
 		targetUrl := filingURL + "/" + defItem.Name
-		dest := path.Join(workingDir, defItem.Name)
-		err = scrapeAndWrite(targetUrl, dest, throttle)
+		definition, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		calItem, err := getCalculationLinkbaseFromFilingItems(items, ticker)
+		calItem, err = getCalculationLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
 		targetUrl := filingURL + "/" + calItem.Name
-		dest := path.Join(workingDir, calItem.Name)
-		err = scrapeAndWrite(targetUrl, dest, throttle)
+		calculation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		labItem, err := getLabelLinkbaseFromFilingItems(items, ticker)
+		labItem, err = getLabelLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
 		targetUrl := filingURL + "/" + labItem.Name
-		dest := path.Join(workingDir, labItem.Name)
-		err = scrapeAndWrite(targetUrl, dest, throttle)
+		label, err = actions.Scrape(targetUrl, throttle)
 	}()
 	wg.Wait()
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return zipData([]struct {
+		Name string
+		Body []byte
+	}{
+		{schemaItem.Name, schema},
+		{instance.Name, instanceBytes},
+		{preItem.Name, presentation},
+		{defItem.Name, definition},
+		{calItem.Name, calculation},
+		{labItem.Name, label},
+	})
 }
 
-func scrapeAndWrite(url string, dest string, throttle func(string)) error {
-	scraped, err := actions.Scrape(url, throttle)
-	if err != nil {
-		return err
+func zipData(files []struct {
+	Name string
+	Body []byte
+}) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+	for _, file := range files {
+		zipFile, err := zipWriter.Create(file.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = zipFile.Write(file.Body)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return actions.WriteFile(dest, scraped)
+	err := zipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
