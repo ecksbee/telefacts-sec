@@ -3,11 +3,15 @@ package names
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
 )
 
 func MergeNames(throttle func(string)) error {
+	if NamePath == "" {
+		return fmt.Errorf("empty NamePath")
+	}
 	unmarshalled, err := UnmarshalNames()
 	if err != nil {
 		return err
@@ -27,5 +31,5 @@ func MergeNames(throttle func(string)) error {
 	}
 	var buffer bytes.Buffer
 	json.NewEncoder(&buffer).Encode(merged)
-	return actions.WriteFile(namePath, buffer.Bytes())
+	return actions.WriteFile(NamePath, buffer.Bytes())
 }

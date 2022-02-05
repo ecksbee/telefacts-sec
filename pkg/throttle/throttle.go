@@ -1,4 +1,4 @@
-package telefacts_sec_test
+package throttle
 
 import (
 	"net/url"
@@ -14,14 +14,14 @@ var (
 	throttled bool             = false
 )
 
-func startSECThrottle() {
+func StartSECThrottle() {
 	if !throttled {
 		r8lmt.Throttler(out, in, dur, false)
 		throttled = true
 	}
 }
 
-func throttle(urlString string) {
+func Throttle(urlString string) {
 	urlStruct, err := url.Parse(urlString)
 	if urlStruct.Hostname() != "sec.gov" {
 		return

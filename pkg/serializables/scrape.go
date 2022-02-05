@@ -1,41 +1,25 @@
 package serializables
 
 import (
+	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"path"
 	"regexp"
 	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
-	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
-type filingItem struct {
-	LastModified string `json:"last-modified"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Size         string `json:"size"`
-}
-
-const ixbrlExt = ".htm"
-const xmlExt = ".xml"
-const xsdExt = ".xsd"
-const preExt = "_pre.xml"
-const defExt = "_def.xml"
-const calExt = "_cal.xml"
-const labExt = "_lab.xml"
-const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
-
-func Scrape(filingURL string, dir string, throttle func(string)) error {
+func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
-		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
+		return nil, fmt.Errorf("not an acceptable SEC address, " + filingURL)
 	}
 	body, err := actions.Scrape(filingURL+"/index.json", throttle)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	filing := struct {
 		Directory struct {
@@ -47,111 +31,118 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	err = json.Unmarshal(body, &filing)
 	items := filing.Directory.Item
 	if len(items) <= 0 || err != nil {
-		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
+		return nil, fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
-	schemaItem, err := getSchemaFromFilingItems(items) //todo scrape and unzip .zip filing item
+	schemaItem, err := getSchemaFromFilingItems(items)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	str := schemaItem.Name
 	x := strings.Index(str, "-")
 	ticker := str[:x]
 	if len(ticker) <= 0 {
-		return fmt.Errorf("ticker symbol not found")
+		return nil, fmt.Errorf("ticker symbol not found")
 	}
-	var entry string
-	ixbrlItem, err := getIxbrlFileFromFilingItems(items, ticker)
-	if err != nil && err.Error() == "cannot identify a single ixbrl file" {
-		instance, err := getInstanceFromFilingItems(items, ticker)
-		if err != nil {
-			return err
-		}
-		entry = instance.Name
-	} else {
-		entry = ixbrlItem.Name
-	}
-	underscore.VolumePath = dir
-	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry:    ixbrlItem.Name,
-		Checksum: "",
-		Note:     filingURL,
-	})
+	instance, err := getInstanceFromFilingItems(items, ticker)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	workingDir := path.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
+	var (
+		schema        []byte
+		instanceBytes []byte
+		presentation  []byte
+		definition    []byte
+		calculation   []byte
+		label         []byte
+		preItem       *filingItem
+		defItem       *filingItem
+		calItem       *filingItem
+		labItem       *filingItem
+	)
 	go func() {
 		defer wg.Done()
-		schema, err := actions.Scrape(filingURL+"/"+schemaItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, schemaItem.Name)
-		err = actions.WriteFile(dest, schema)
+		targetUrl := filingURL + "/" + schemaItem.Name
+		schema, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		entryFile, err := actions.Scrape(filingURL+"/"+entry, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, ixbrlItem.Name)
-		err = actions.WriteFile(dest, entryFile)
+		targetUrl := filingURL + "/" + instance.Name
+		instanceBytes, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		preItem, err := getPresentationLinkbaseFromFilingItems(items, ticker)
+		preItem, err = getPresentationLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
-		presentation, err := actions.Scrape(filingURL+"/"+preItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, preItem.Name)
-		err = actions.WriteFile(dest, presentation)
+		targetUrl := filingURL + "/" + preItem.Name
+		presentation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		defItem, err := getDefinitionLinkbaseFromFilingItems(items, ticker)
+		defItem, err = getDefinitionLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
-		definition, err := actions.Scrape(filingURL+"/"+defItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, defItem.Name)
-		err = actions.WriteFile(dest, definition)
+		targetUrl := filingURL + "/" + defItem.Name
+		definition, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		calItem, err := getCalculationLinkbaseFromFilingItems(items, ticker)
+		calItem, err = getCalculationLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
-		calculation, err := actions.Scrape(filingURL+"/"+calItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, calItem.Name)
-		err = actions.WriteFile(dest, calculation)
+		targetUrl := filingURL + "/" + calItem.Name
+		calculation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		labItem, err := getLabelLinkbaseFromFilingItems(items, ticker)
+		labItem, err = getLabelLinkbaseFromFilingItems(items, ticker)
 		if err != nil {
 			return
 		}
-		label, err := actions.Scrape(filingURL+"/"+labItem.Name, throttle)
-		if err != nil {
-			return
-		}
-		dest := path.Join(workingDir, labItem.Name)
-		err = actions.WriteFile(dest, label)
+		targetUrl := filingURL + "/" + labItem.Name
+		label, err = actions.Scrape(targetUrl, throttle)
 	}()
 	wg.Wait()
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return zipData([]struct {
+		Name string
+		Body []byte
+	}{
+		{schemaItem.Name, schema},
+		{instance.Name, instanceBytes},
+		{preItem.Name, presentation},
+		{defItem.Name, definition},
+		{calItem.Name, calculation},
+		{labItem.Name, label},
+	})
+}
+
+func zipData(files []struct {
+	Name string
+	Body []byte
+}) ([]byte, error) {
+	buf := new(bytes.Buffer)
+	zipWriter := zip.NewWriter(buf)
+	for _, file := range files {
+		zipFile, err := zipWriter.Create(file.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = zipFile.Write(file.Body)
+		if err != nil {
+			return nil, err
+		}
+	}
+	err := zipWriter.Close()
+	if err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }
