@@ -19,6 +19,8 @@ type filingItem struct {
 	Size         string `json:"size"`
 }
 
+const IX = "http://www.xbrl.org/2013/inlineXBRL"
+
 const ixbrlExt = ".htm"
 const xmlExt = ".xml"
 const xsdExt = ".xsd"
@@ -27,6 +29,10 @@ const defExt = "_def.xml"
 const calExt = "_cal.xml"
 const labExt = "_lab.xml"
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
+
+func getImageExts() [3]string {
+	return [3]string{".gif", ".jpg", ".jpeg"}
+}
 
 func Scrape(filingURL string, dir string, throttle func(string)) error {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
@@ -49,7 +55,7 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	if len(items) <= 0 || err != nil {
 		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
-	schemaItem, err := getSchemaFromFilingItems(items) //todo scrape and unzip .zip filing item
+	schemaItem, err := getSchemaFromFilingItems(items)
 	if err != nil {
 		return err
 	}
@@ -72,8 +78,9 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
-	hasIXBRL := false
-	// inspect srcFile if it has ixbrl elements
+	// todo we need an IXBRL parser
+	q := "//html/body//*[local-name()='header' and namespace-uri()='" + IX + "']//*[local-name()='resources' and namespace-uri()='" + IX + "']"
+	hasIXBRL := q == "//todo use q to determine if srcFile is an IXBRL file"
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
 		Entry:    instance.Name,
@@ -89,9 +96,12 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	wg.Add(6)
 	if hasIXBRL {
 		wg.Add(1)
+		// imgs := getImagesFromFilingItems(items)
 		go func() {
 			defer wg.Done()
-			// persist srcfile if its IXBRL
+			dest := path.Join(workingDir, srcName)
+			err = actions.WriteFile(dest, srcFile)
+
 			// todo scrape images .jpg or .gif
 		}()
 	}
@@ -106,12 +116,9 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 	}()
 	go func() {
 		defer wg.Done()
-		entryFile, err := actions.Scrape(filingURL+"/"+instance.Name, throttle)
-		if err != nil {
-			return
-		}
+		targetUrl := filingURL + "/" + instance.Name
 		dest := path.Join(workingDir, instance.Name)
-		err = actions.WriteFile(dest, entryFile)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
@@ -119,12 +126,9 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 		if err != nil {
 			return
 		}
-		presentation, err := actions.Scrape(filingURL+"/"+preItem.Name, throttle)
-		if err != nil {
-			return
-		}
+		targetUrl := filingURL + "/" + preItem.Name
 		dest := path.Join(workingDir, preItem.Name)
-		err = actions.WriteFile(dest, presentation)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
@@ -132,12 +136,9 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 		if err != nil {
 			return
 		}
-		definition, err := actions.Scrape(filingURL+"/"+defItem.Name, throttle)
-		if err != nil {
-			return
-		}
+		targetUrl := filingURL + "/" + defItem.Name
 		dest := path.Join(workingDir, defItem.Name)
-		err = actions.WriteFile(dest, definition)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
@@ -145,12 +146,9 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 		if err != nil {
 			return
 		}
-		calculation, err := actions.Scrape(filingURL+"/"+calItem.Name, throttle)
-		if err != nil {
-			return
-		}
+		targetUrl := filingURL + "/" + calItem.Name
 		dest := path.Join(workingDir, calItem.Name)
-		err = actions.WriteFile(dest, calculation)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
@@ -158,13 +156,18 @@ func Scrape(filingURL string, dir string, throttle func(string)) error {
 		if err != nil {
 			return
 		}
-		label, err := actions.Scrape(filingURL+"/"+labItem.Name, throttle)
-		if err != nil {
-			return
-		}
+		targetUrl := filingURL + "/" + labItem.Name
 		dest := path.Join(workingDir, labItem.Name)
-		err = actions.WriteFile(dest, label)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	wg.Wait()
 	return err
+}
+
+func scrapeAndWrite(url string, dest string, throttle func(string)) error {
+	scraped, err := actions.Scrape(url, throttle)
+	if err != nil {
+		return err
+	}
+	return actions.WriteFile(dest, scraped)
 }

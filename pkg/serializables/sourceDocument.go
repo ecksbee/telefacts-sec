@@ -18,3 +18,19 @@ func getSourceDocumentFromFilingItems(filingItems []filingItem, ticker string) (
 	}
 	return nil, fmt.Errorf("cannot identify source document")
 }
+
+func getImagesFromFilingItems(filingItems []filingItem) []*filingItem {
+	ret := make([]*filingItem, 0)
+	exts := getImageExts()
+	for _, f := range filingItems {
+		s := f.Name
+		ext := filepath.Ext(s)
+		for _, eext := range exts {
+			if ext == eext {
+				ret = append(ret, &f)
+				break
+			}
+		}
+	}
+	return ret
+}
