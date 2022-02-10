@@ -73,6 +73,7 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 		return err
 	}
 	workingDir := path.Join(dir, "folders", id)
+	//todo make sure folders exists
 	var wg sync.WaitGroup
 	wg.Add(6)
 	go func() {
