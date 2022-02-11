@@ -9,6 +9,8 @@ import (
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
+	"ecksbee.com/telefacts-taxonomy-package/pkg/taxonomies"
+	"ecksbee.com/telefacts/pkg/attr"
 	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
@@ -84,6 +86,28 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 		}
 		dest := path.Join(workingDir, schemaItem.Name)
 		err = actions.WriteFile(dest, schema)
+		if err == nil {
+			decoded, err := underscore.DecodeSchemaFile(schema)
+			if err != nil {
+				return
+			}
+			entries := make([]string, 0)
+			for _, stm := range decoded.Import {
+				loc := attr.FindAttr(stm.XMLAttrs, "schemaLocation")
+				//todo taxonomies.ImportSchema
+				entries = append(entries, loc.Value)
+			}
+			for _, stm := range decoded.Include {
+				loc := attr.FindAttr(stm.XMLAttrs, "schemaLocation")
+				//todo taxonomies.IncludeSchema
+				entries = append(entries, loc.Value)
+			}
+			taxonomies.VolumePath = dir
+			err = taxonomies.Discover(entries)
+			if err != nil {
+				fmt.Printf("%v", err)
+			}
+		}
 	}()
 	go func() {
 		defer wg.Done()
