@@ -3,12 +3,15 @@ package serializables
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
+	"ecksbee.com/telefacts-taxonomy-package/pkg/taxonomies"
 	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
@@ -62,6 +65,10 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
+	err = os.MkdirAll(filepath.Join(dir, "folders"), 0755)
+	if err != nil {
+		return err
+	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
 		Entry:    instance.Name,
@@ -72,7 +79,7 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
-	workingDir := path.Join(dir, "folders", id)
+	workingDir := filepath.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
 	go func() {
@@ -83,6 +90,14 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 		}
 		dest := path.Join(workingDir, schemaItem.Name)
 		err = actions.WriteFile(dest, schema)
+		if err == nil {
+			decoded, err := underscore.DecodeSchemaFile(schema)
+			if err != nil {
+				return
+			}
+			taxonomies.VolumePath = dir
+			taxonomies.ImportSchema(decoded)
+		}
 	}()
 	go func() {
 		defer wg.Done()

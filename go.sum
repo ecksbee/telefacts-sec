@@ -1,5 +1,7 @@
 github.com/ecksbee/telefacts v1.0.1 h1:uViOG+j6yAMFv98DXOtEcmNCX1oY6aj2TdsNvuNYZ+8=
 github.com/ecksbee/telefacts v1.0.1/go.mod h1:qMUL806rMY6C+Ba7JJNWMxZj/WFAOoYlQTjr6eSZkY0=
+github.com/ecksbee/telefacts-taxonomy-package v0.0.0 h1:C9GeutTGMFmyyFr6vx0DPWUgqKLHR7ApQLCLtETA7Ys=
+github.com/ecksbee/telefacts-taxonomy-package v0.0.0/go.mod h1:+bD9MFIji92x5QBXE1OLkHp9a3WiqMBRoFif4pLXe1k=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
@@ -8,11 +10,14 @@ github.com/joshuanario/r8lmt v0.0.0-20190907165225-782e183364f7 h1:MbBjw7CH+eoPU
 github.com/joshuanario/r8lmt v0.0.0-20190907165225-782e183364f7/go.mod h1:j8fxgDaL4nKo9Ny5I0HoMF4liDaPEuRvs5V8p74xrgs=
 github.com/klauspost/lctime v0.1.0/go.mod h1:OwdMhr8tbQvusAsnilqkkgDQqivWlqyg0w5cfXkLiDk=
 github.com/patrickmn/go-cache v2.1.0+incompatible/go.mod h1:3Qf8kWWT7OJRJbdiICTKqZju1ZixQ/KpMGzzAfe6+WQ=
-golang.org/x/net v0.0.0-20210326220855-61e056675ecf h1:WUcCxqQqDT0aXO4VnQbfMvp4zh7m1Gb2clVuHUAGGRE=
 golang.org/x/net v0.0.0-20210326220855-61e056675ecf/go.mod h1:uSPa2vr4CLtc/ILN5odXGNXS6mhrKVzTaCXzk9m6W3k=
+golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b h1:SXy8Ld8oKlcogOvUAh0J5Pm5RKzgYBMMxLxt6n5XW50=
+golang.org/x/net v0.0.0-20211005001312-d4b1ae081e3b/go.mod h1:9nx3DQGgdP8bBQD5qxJ1jj9UTztislL4KSBs9R2vV5Y=
 golang.org/x/sys v0.0.0-20201119102817-f84b799fce68/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/sys v0.0.0-20210324051608-47abb6519492/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
+golang.org/x/sys v0.0.0-20210423082822-04245dca01da/go.mod h1:h1NjWce9XRLGQEsW7wpKNCjG9DtNlClVuFLEZdDNbEs=
 golang.org/x/term v0.0.0-20201126162022-7de9c90e9dd1/go.mod h1:bj7SfCRtBDWHUb9snDiAeCFNEtKQo2Wmx5Cou7ajbmo=
-golang.org/x/text v0.3.3 h1:cokOdA+Jmi5PJGXLlLllQSgYigAEfHXJAERHVMaCc2k=
 golang.org/x/text v0.3.3/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
+golang.org/x/text v0.3.6 h1:aRYxNxv6iGQlyVaZmk6ZgYEDa+Jg18DxebPSrd6bg1M=
+golang.org/x/text v0.3.6/go.mod h1:5Zoc/QRtKVWzQhOtBMvqHzDpF6irO9z98xDceosuGiQ=
 golang.org/x/tools v0.0.0-20180917221912-90fa682c2a6e/go.mod h1:n7NCudcB/nEzxVGmLbDWY5pfWTLqBcC2KZ6jyYvM4mQ=
