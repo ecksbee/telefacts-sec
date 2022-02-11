@@ -3,14 +3,15 @@ package serializables
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
 	"ecksbee.com/telefacts-taxonomy-package/pkg/taxonomies"
-	"ecksbee.com/telefacts/pkg/attr"
 	underscore "ecksbee.com/telefacts/pkg/serializables"
 )
 
@@ -64,6 +65,10 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
+	err = os.MkdirAll(filepath.Join(dir, "folders"), 0755)
+	if err != nil {
+		return err
+	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
 		Entry:    instance.Name,
@@ -74,8 +79,7 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
-	workingDir := path.Join(dir, "folders", id)
-	//todo make sure folders exists
+	workingDir := filepath.Join(dir, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
 	go func() {
@@ -91,22 +95,8 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 			if err != nil {
 				return
 			}
-			entries := make([]string, 0)
-			for _, stm := range decoded.Import {
-				loc := attr.FindAttr(stm.XMLAttrs, "schemaLocation")
-				//todo taxonomies.ImportSchema
-				entries = append(entries, loc.Value)
-			}
-			for _, stm := range decoded.Include {
-				loc := attr.FindAttr(stm.XMLAttrs, "schemaLocation")
-				//todo taxonomies.IncludeSchema
-				entries = append(entries, loc.Value)
-			}
 			taxonomies.VolumePath = dir
-			err = taxonomies.Discover(entries)
-			if err != nil {
-				fmt.Printf("%v", err)
-			}
+			taxonomies.ImportSchema(decoded)
 		}
 	}()
 	go func() {
