@@ -71,10 +71,8 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry:    instance.Name,
-		Checksum: "",
-		Ixbrl:    "",
-		Note:     filingURL,
+		Entry: instance.Name,
+		Note:  filingURL,
 	})
 	if err != nil {
 		return err
