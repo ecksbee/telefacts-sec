@@ -1,7 +1,7 @@
-github.com/ecksbee/telefacts v1.0.1 h1:uViOG+j6yAMFv98DXOtEcmNCX1oY6aj2TdsNvuNYZ+8=
-github.com/ecksbee/telefacts v1.0.1/go.mod h1:qMUL806rMY6C+Ba7JJNWMxZj/WFAOoYlQTjr6eSZkY0=
-github.com/ecksbee/telefacts-taxonomy-package v0.0.0 h1:C9GeutTGMFmyyFr6vx0DPWUgqKLHR7ApQLCLtETA7Ys=
-github.com/ecksbee/telefacts-taxonomy-package v0.0.0/go.mod h1:+bD9MFIji92x5QBXE1OLkHp9a3WiqMBRoFif4pLXe1k=
+github.com/ecksbee/telefacts v1.0.2 h1:Cenwms+vOtYBnbop4VxOk0ecDRbuir7uTgKxwqKFn9A=
+github.com/ecksbee/telefacts v1.0.2/go.mod h1:qMUL806rMY6C+Ba7JJNWMxZj/WFAOoYlQTjr6eSZkY0=
+github.com/ecksbee/telefacts-taxonomy-package v0.1.1 h1:G1oRmHfNu7NRaJAwQclj9qhVjte/6Y78mpG71FYkzoo=
+github.com/ecksbee/telefacts-taxonomy-package v0.1.1/go.mod h1:PbvibdEQh0lQwy7NY0YLpB4crtiNWgrv+Z8FAQGSpa4=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
 github.com/google/uuid v1.3.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/gorilla/mux v1.8.0/go.mod h1:DVbg23sWSpFRCP0SfiEN6jmj59UnW/n46BH5rLB71So=
