@@ -14,6 +14,7 @@ func TestAllDownloads(t *testing.T) {
 	testDownloadGoFiler(t)
 	testDownloadThunderDome(t)
 	testDownloadWDesk(t)
+	testDownloadWDesk2(t)
 }
 
 func testDownloadGoFiler(t *testing.T) {
@@ -43,6 +44,17 @@ func testDownloadWDesk(t *testing.T) {
 	dir := filepath.Join(wd, "data")
 	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/1445305/000144530520000124",
+		dir, throttle.Throttle)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
+
+func testDownloadWDesk2(t *testing.T) {
+	wd, _ := os.Getwd()
+	dir := filepath.Join(wd, "data")
+	err := serializables.Download(
+		"https://www.sec.gov/Archives/edgar/data/0001058090/000105809020000020",
 		dir, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
