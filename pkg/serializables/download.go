@@ -1,26 +1,20 @@
 package serializables
 
 import (
-	"encoding/json"
+	"bytes"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
 	"ecksbee.com/telefacts-taxonomy-package/pkg/taxonomies"
 	underscore "ecksbee.com/telefacts/pkg/serializables"
+	"golang.org/x/net/html/charset"
 )
-
-type filingItem struct {
-	LastModified string `json:"last-modified"`
-	Name         string `json:"name"`
-	Type         string `json:"type"`
-	Size         string `json:"size"`
-}
 
 const xmlExt = ".xml"
 const xsdExt = ".xsd"
@@ -35,35 +29,22 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if !isSEC {
 		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
 	}
-	body, err := actions.Scrape(filingURL+"/index.json", throttle)
+	body, err := actions.Scrape(filingURL+"/FilingSummary.xml", throttle)
 	if err != nil {
 		return err
 	}
-	filing := struct {
-		Directory struct {
-			Item      []filingItem `json:"item"`
-			Name      string       `json:"name"`
-			ParentDir string       `json:"parent-dir"`
-		} `json:"directory"`
-	}{}
-	err = json.Unmarshal(body, &filing)
-	items := filing.Directory.Item
-	if len(items) <= 0 || err != nil {
+	reader := bytes.NewReader(body)
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+	filingSummary := FilingSummary{}
+	err = decoder.Decode(&filingSummary)
+	if len(filingSummary.InputFiles) <= 0 || len(filingSummary.InputFiles[0].File) <= 0 || err != nil {
 		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
-	schemaItem, err := getSchemaFromFilingItems(items)
-	if err != nil {
-		return err
-	}
-	str := schemaItem.Name
-	x := strings.Index(str, "-")
-	ticker := str[:x]
-	if len(ticker) <= 0 {
-		return fmt.Errorf("ticker symbol not found")
-	}
-	instance, err := getInstanceFromFilingItems(items, ticker)
-	if err != nil {
-		return err
+	entry := filingSummary.GetInstance()
+	srcDoc := filingSummary.GetIxbrl()
+	if srcDoc != "" {
+		entry = srcDoc
 	}
 	err = os.MkdirAll(filepath.Join(dir, "folders"), 0755)
 	if err != nil {
@@ -71,7 +52,7 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	}
 	underscore.VolumePath = dir
 	id, err := underscore.NewFolder(underscore.Underscore{
-		Entry: instance.Name,
+		Entry: entry,
 		Note:  filingURL,
 	})
 	if err != nil {
@@ -82,11 +63,12 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	wg.Add(6)
 	go func() {
 		defer wg.Done()
-		schema, err := actions.Scrape(filingURL+"/"+schemaItem.Name, throttle)
+		schemaName := filingSummary.GetSchema()
+		schema, err := actions.Scrape(filingURL+"/"+schemaName, throttle)
 		if err != nil {
 			return
 		}
-		dest := path.Join(workingDir, schemaItem.Name)
+		dest := path.Join(workingDir, schemaName)
 		err = actions.WriteFile(dest, schema)
 		if err == nil {
 			decoded, err := underscore.DecodeSchemaFile(schema)
@@ -99,48 +81,36 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	}()
 	go func() {
 		defer wg.Done()
-		targetUrl := filingURL + "/" + instance.Name
-		dest := path.Join(workingDir, instance.Name)
+		targetUrl := filingURL + "/" + entry
+		dest := path.Join(workingDir, entry)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		preItem, err := getPresentationLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + preItem.Name
-		dest := path.Join(workingDir, preItem.Name)
+		preItem := filingSummary.GetPresentationLinkbase()
+		targetUrl := filingURL + "/" + preItem
+		dest := path.Join(workingDir, preItem)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		defItem, err := getDefinitionLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + defItem.Name
-		dest := path.Join(workingDir, defItem.Name)
+		defItem := filingSummary.GetDefinitionLinkbase()
+		targetUrl := filingURL + "/" + defItem
+		dest := path.Join(workingDir, defItem)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		calItem, err := getCalculationLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + calItem.Name
-		dest := path.Join(workingDir, calItem.Name)
+		calItem := filingSummary.GetCalculationLinkbase()
+		targetUrl := filingURL + "/" + calItem
+		dest := path.Join(workingDir, calItem)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		labItem, err := getLabelLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + labItem.Name
-		dest := path.Join(workingDir, labItem.Name)
+		labItem := filingSummary.GetLabelLinkbase()
+		targetUrl := filingURL + "/" + labItem
+		dest := path.Join(workingDir, labItem)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	wg.Wait()

@@ -3,13 +3,13 @@ package serializables
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
+	"encoding/xml"
 	"fmt"
 	"regexp"
-	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
+	"golang.org/x/net/html/charset"
 )
 
 func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
@@ -17,94 +17,69 @@ func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 	if !isSEC {
 		return nil, fmt.Errorf("not an acceptable SEC address, " + filingURL)
 	}
-	body, err := actions.Scrape(filingURL+"/index.json", throttle)
+	body, err := actions.Scrape(filingURL+"/FilingSummary.xml", throttle)
 	if err != nil {
 		return nil, err
 	}
-	filing := struct {
-		Directory struct {
-			Item      []filingItem `json:"item"`
-			Name      string       `json:"name"`
-			ParentDir string       `json:"parent-dir"`
-		} `json:"directory"`
-	}{}
-	err = json.Unmarshal(body, &filing)
-	items := filing.Directory.Item
-	if len(items) <= 0 || err != nil {
+	reader := bytes.NewReader(body)
+	decoder := xml.NewDecoder(reader)
+	decoder.CharsetReader = charset.NewReaderLabel
+	filingSummary := FilingSummary{}
+	err = decoder.Decode(&filingSummary)
+	if len(filingSummary.InputFiles) <= 0 || len(filingSummary.InputFiles[0].File) <= 0 || err != nil {
 		return nil, fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
-	schemaItem, err := getSchemaFromFilingItems(items)
-	if err != nil {
-		return nil, err
-	}
-	str := schemaItem.Name
-	x := strings.Index(str, "-")
-	ticker := str[:x]
-	if len(ticker) <= 0 {
-		return nil, fmt.Errorf("ticker symbol not found")
-	}
-	instance, err := getInstanceFromFilingItems(items, ticker)
-	if err != nil {
-		return nil, err
-	}
+	instance := filingSummary.GetInstance()
+	srcDoc := filingSummary.GetIxbrl()
+	schemaName := filingSummary.GetSchema()
+	preItem := filingSummary.GetPresentationLinkbase()
+	defItem := filingSummary.GetDefinitionLinkbase()
+	calItem := filingSummary.GetCalculationLinkbase()
+	labItem := filingSummary.GetLabelLinkbase()
 	var wg sync.WaitGroup
 	wg.Add(6)
 	var (
 		schema        []byte
 		instanceBytes []byte
+		srcBytes      []byte
 		presentation  []byte
 		definition    []byte
 		calculation   []byte
 		label         []byte
-		preItem       *filingItem
-		defItem       *filingItem
-		calItem       *filingItem
-		labItem       *filingItem
 	)
 	go func() {
 		defer wg.Done()
-		targetUrl := filingURL + "/" + schemaItem.Name
+		targetUrl := filingURL + "/" + schemaName
 		schema, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		targetUrl := filingURL + "/" + instance.Name
+		targetUrl := filingURL + "/" + instance
 		instanceBytes, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		preItem, err = getPresentationLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + preItem.Name
+		targetUrl := filingURL + "/" + srcDoc
+		srcBytes, err = actions.Scrape(targetUrl, throttle)
+	}()
+	go func() {
+		defer wg.Done()
+		targetUrl := filingURL + "/" + preItem
 		presentation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		defItem, err = getDefinitionLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + defItem.Name
+		targetUrl := filingURL + "/" + defItem
 		definition, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		calItem, err = getCalculationLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + calItem.Name
+		targetUrl := filingURL + "/" + calItem
 		calculation, err = actions.Scrape(targetUrl, throttle)
 	}()
 	go func() {
 		defer wg.Done()
-		labItem, err = getLabelLinkbaseFromFilingItems(items, ticker)
-		if err != nil {
-			return
-		}
-		targetUrl := filingURL + "/" + labItem.Name
+		targetUrl := filingURL + "/" + labItem
 		label, err = actions.Scrape(targetUrl, throttle)
 	}()
 	wg.Wait()
@@ -115,12 +90,13 @@ func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 		Name string
 		Body []byte
 	}{
-		{schemaItem.Name, schema},
-		{instance.Name, instanceBytes},
-		{preItem.Name, presentation},
-		{defItem.Name, definition},
-		{calItem.Name, calculation},
-		{labItem.Name, label},
+		{schemaName, schema},
+		{instance, instanceBytes},
+		{srcDoc, srcBytes},
+		{preItem, presentation},
+		{defItem, definition},
+		{calItem, calculation},
+		{labItem, label},
 	})
 }
 
