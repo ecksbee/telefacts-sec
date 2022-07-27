@@ -14,5 +14,7 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
-/test/data/**
-/cmd/telefacts-sec/data/**
+/test/wd/**
+/test/gts/**
+/cmd/telefacts-sec/wd/**
+/cmd/telefacts-sec/gts/**

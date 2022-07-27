@@ -18,44 +18,48 @@ func TestAllDownloads(t *testing.T) {
 }
 
 func testDownloadGoFiler(t *testing.T) {
-	wd, _ := os.Getwd()
-	dir := filepath.Join(wd, "data")
+	dir, _ := os.Getwd()
+	wd := filepath.Join(dir, "wd")
+	gts := filepath.Join(dir, "gts")
 	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/843006/000165495420001999",
-		dir, throttle.Throttle)
+		wd, gts, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 }
 
 func testDownloadThunderDome(t *testing.T) {
-	wd, _ := os.Getwd()
-	dir := filepath.Join(wd, "data")
+	dir, _ := os.Getwd()
+	wd := filepath.Join(dir, "wd")
+	gts := filepath.Join(dir, "gts")
 	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/69891/000143774920014395",
-		dir, throttle.Throttle)
+		wd, gts, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 }
 
 func testDownloadWDesk(t *testing.T) {
-	wd, _ := os.Getwd()
-	dir := filepath.Join(wd, "data")
+	dir, _ := os.Getwd()
+	wd := filepath.Join(dir, "wd")
+	gts := filepath.Join(dir, "gts")
 	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/1445305/000144530520000124",
-		dir, throttle.Throttle)
+		wd, gts, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}
 }
 
 func testDownloadWDesk2(t *testing.T) {
-	wd, _ := os.Getwd()
-	dir := filepath.Join(wd, "data")
+	dir, _ := os.Getwd()
+	wd := filepath.Join(dir, "wd")
+	gts := filepath.Join(dir, "gts")
 	err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/0001058090/000105809020000020",
-		dir, throttle.Throttle)
+		wd, gts, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
 	}

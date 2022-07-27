@@ -44,8 +44,9 @@ func installNamesRegistry() {
 
 func scrapeEDGAR(url string) {
 	throttle.StartSECThrottle()
-	dir := path.Join(".", "data")
-	err := serializables.Download(url, dir, throttle.Throttle)
+	wd := path.Join(".", "wd")
+	gts := path.Join(".", "gts")
+	err := serializables.Download(url, wd, gts, throttle.Throttle)
 	if err != nil {
 		panic(err)
 	}
