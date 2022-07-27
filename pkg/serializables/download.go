@@ -24,7 +24,7 @@ const calExt = "_cal.xml"
 const labExt = "_lab.xml"
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
 
-func Download(filingURL string, dir string, throttle func(string)) error {
+func Download(filingURL string, wd string, gts string, throttle func(string)) error {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
 		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
@@ -46,11 +46,11 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if srcDoc != "" {
 		entry = srcDoc
 	}
-	err = os.MkdirAll(filepath.Join(dir, "folders"), 0755)
+	err = os.MkdirAll(filepath.Join(wd, "folders"), 0755)
 	if err != nil {
 		return err
 	}
-	underscore.VolumePath = dir
+	underscore.WorkingDirectoryPath = wd
 	id, err := underscore.NewFolder(underscore.Underscore{
 		Entry: entry,
 		Note:  filingURL,
@@ -58,7 +58,7 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 	if err != nil {
 		return err
 	}
-	workingDir := filepath.Join(dir, "folders", id)
+	workingDir := filepath.Join(wd, "folders", id)
 	var wg sync.WaitGroup
 	wg.Add(6)
 	go func() {
@@ -75,7 +75,8 @@ func Download(filingURL string, dir string, throttle func(string)) error {
 			if err != nil {
 				return
 			}
-			taxonomies.VolumePath = dir
+			taxonomies.VolumePath = gts
+			underscore.GlobalTaxonomySetPath = gts
 			taxonomies.ImportSchema(decoded)
 		}
 	}()
