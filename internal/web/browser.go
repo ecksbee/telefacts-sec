@@ -3,7 +3,6 @@ package web
 import (
 	"bytes"
 	"encoding/xml"
-	"fmt"
 	"html/template"
 	"net/http"
 	neturl "net/url"
@@ -13,6 +12,7 @@ import (
 	"time"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
+	"ecksbee.com/telefacts-sec/pkg/serializables"
 	"ecksbee.com/telefacts-sec/pkg/throttle"
 	"github.com/gorilla/mux"
 	"golang.org/x/net/html/charset"
@@ -22,6 +22,8 @@ var homeTmpl *template.Template
 var searchTmpl *template.Template
 var importTmpl *template.Template
 var filingTmpl *template.Template
+var WorkingDirectoryPath string
+var GlobalTaxonomySetPath string
 
 type EdgarRss struct {
 	XMLName  xml.Name   `xml:"feed"`
@@ -97,37 +99,33 @@ func init() {
 }
 
 func Navigate(r *mux.Router) {
-	r.Path("/{type}/{cik}/{filingid}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Path("/review/{hash}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
 			return
 		}
 		vars := mux.Vars(r)
-		typeid := vars["type"]
-		cik := vars["cik"]
-		filingid := vars["filingid"]
-		switch typeid {
-		case "8k", "10k", "10q", "485bpos":
-			w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "text/html")
-			data := map[string]string{
-				"Type":     typeid,
-				"Cik":      cik,
-				"Filingid": filingid,
-			}
-			filingTmpl.Execute(w, data)
-		default:
-			http.Error(w, "Error: invalid type '"+typeid+"'", http.StatusBadRequest)
+		hash := vars["hash"]
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/html")
+		data := map[string]string{
+			"Hash": hash,
 		}
+		filingTmpl.Execute(w, data)
 	})
-	r.Path("/{cik}/{filingid}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	r.Path("/import").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
 			return
 		}
-		vars := mux.Vars(r)
-		filingid := vars["filingid"]
-		cik := vars["cik"]
+		mypath, err := neturl.QueryUnescape(r.URL.Query().Get("path"))
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		trunc := path.Dir(mypath)
+		filingid := path.Base(trunc)
+		cik := path.Base(path.Dir(trunc))
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
 		data := map[string]string{
@@ -135,6 +133,12 @@ func Navigate(r *mux.Router) {
 			"Cik":             cik,
 		}
 		importTmpl.Execute(w, data)
+		//todo websockets
+		go func() {
+			serializables.Download(
+				"https://www.sec.gov/Archives/edgar/data/"+cik+"/"+filingid,
+				WorkingDirectoryPath, GlobalTaxonomySetPath, throttle.Throttle)
+		}()
 	})
 	r.Path("/company-search").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
@@ -167,7 +171,6 @@ func Navigate(r *mux.Router) {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		fmt.Printf("%s", string(body))
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
 		data := SearchResult{

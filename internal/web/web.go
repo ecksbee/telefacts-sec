@@ -51,11 +51,13 @@ func newRouter() http.Handler {
 		wd = dir
 	}
 	serializables.WorkingDirectoryPath = path.Join(wd, "wd")
+	WorkingDirectoryPath = serializables.WorkingDirectoryPath
 	gts := os.Getenv("GTS")
 	if gts == "" {
 		gts = dir
 	}
 	serializables.GlobalTaxonomySetPath = path.Join(gts, "gts")
+	GlobalTaxonomySetPath = serializables.GlobalTaxonomySetPath
 	hydratables.InjectCache(appCache)
 	hydratables.HydrateEntityNames()
 	hydratables.HydrateFundamentalSchema()

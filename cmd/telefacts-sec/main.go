@@ -52,7 +52,7 @@ func scrapeEDGAR(url string) {
 	throttle.StartSECThrottle()
 	wd := path.Join(".", "wd")
 	gts := path.Join(".", "gts")
-	err := serializables.Download(url, wd, gts, throttle.Throttle)
+	_, err := serializables.Download(url, wd, gts, throttle.Throttle)
 	if err != nil {
 		panic(err)
 	}
