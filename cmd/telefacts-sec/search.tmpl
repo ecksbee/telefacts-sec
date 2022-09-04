@@ -7,7 +7,17 @@
 	<body>
 		<div>
 			<h1>Results for {{.SearchText}}</h1>
-			{{.Items}}
+			<ul>
+				{{range .Results}}
+						<li>
+							<h2>{{.Title}}</h2>
+							<p>
+								{{.Summary}}
+								<a href="/import?{{.PercentEncodedEdgarUrl}}">Browse</a>
+							</p>
+						</li>
+				{{end}}
+			</ul>
 		</div>
 	</body>
 </html>
