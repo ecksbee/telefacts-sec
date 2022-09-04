@@ -6,7 +6,7 @@ RUN apk update && apk add --no-cache git
 RUN go get -d -v
 RUN CGO_ENABLED=0 GOOS=linux go build -o /mybuild/main /mybuild/cmd/telefacts-sec/main.go
 
-FROM goldlord-midas as spa
+FROM ghcr.io/ecksbee/goldlord-midas:main as spa
 
 FROM ghcr.io/ecksbee/sec-testdata:main
 COPY --from=builder /mybuild/main /
