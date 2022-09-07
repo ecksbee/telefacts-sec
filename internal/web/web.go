@@ -28,6 +28,7 @@ func SetupAndListen(ctx context.Context, wait time.Duration) {
 }
 
 func setupServer() *http.Server {
+	NewIdCache()
 	r := newRouter()
 
 	fmt.Println("telefacts-sec-browser<-0.0.0.0:8080")

@@ -89,7 +89,6 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) (s
 		if srcDoc == entry {
 			insDoc := strings.Replace(srcDoc, ".htm", "_htm", 1)
 			targetUrl = filingURL + "/" + insDoc + ".xml"
-			fmt.Println(targetUrl)
 			err = scrapeAndWrite(targetUrl, dest+".xml", throttle)
 		}
 	}()

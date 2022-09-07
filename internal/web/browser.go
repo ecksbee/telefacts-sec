@@ -2,19 +2,23 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"html/template"
 	"net/http"
 	neturl "net/url"
 	"os"
 	"path"
 	"strconv"
+	"sync"
 	"time"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
 	"ecksbee.com/telefacts-sec/pkg/serializables"
 	"ecksbee.com/telefacts-sec/pkg/throttle"
 	"github.com/gorilla/mux"
+	gocache "github.com/patrickmn/go-cache"
 	"golang.org/x/net/html/charset"
 )
 
@@ -78,8 +82,27 @@ type SearchResult struct {
 	}
 }
 
+var (
+	idlock    sync.RWMutex
+	idonce    sync.Once
+	idCache   *gocache.Cache
+	pathCache *gocache.Cache
+)
+
+func NewIdCache() *gocache.Cache {
+	idonce.Do(func() {
+		idCache = gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+		pathCache = gocache.New(gocache.NoExpiration, gocache.NoExpiration)
+	})
+	return idCache
+}
+
 func init() {
 	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	filingTmpl, err = template.ParseFiles(path.Join(dir, "filing.tmpl"))
 	if err != nil {
 		panic(err)
 	}
@@ -108,17 +131,62 @@ func Navigate(r *mux.Router) {
 		hash := vars["hash"]
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
+		idlock.RLock()
+		mypath := "404"
+		idlock.RLock()
+		if path, found := pathCache.Get(hash); found {
+			mypath = path.(string)
+		}
+		idlock.RUnlock()
 		data := map[string]string{
 			"Hash": hash,
+			"Path": mypath,
 		}
 		filingTmpl.Execute(w, data)
+	})
+	r.Path("/{cik}/{filingid}/hash").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Method != http.MethodGet {
+			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
+			return
+		}
+		<-time.After(2 * time.Second)
+		idlock.RLock()
+		cachedid := ""
+		vars := mux.Vars(r)
+		cik := vars["cik"]
+		filingid := vars["filingid"]
+		cachekey := cik + "/" + filingid
+		idlock.RLock()
+		if x, found := idCache.Get(cachekey); found {
+			cachedid = x.(string)
+			data, err := json.Marshal(map[string]string{
+				"hash": cachedid,
+			})
+			if err != nil {
+				http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "application/json")
+			w.Write(data)
+			idlock.RUnlock()
+			return
+		}
+		idlock.RUnlock()
+		w.WriteHeader(http.StatusNotFound)
 	})
 	r.Path("/import").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
 			return
 		}
-		mypath, err := neturl.QueryUnescape(r.URL.Query().Get("path"))
+		parsedquery, err := neturl.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		mypath, err := neturl.QueryUnescape(parsedquery.Get("path"))
 		if err != nil {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
@@ -128,16 +196,33 @@ func Navigate(r *mux.Router) {
 		cik := path.Base(path.Dir(trunc))
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
+		idlock.RLock()
+		cachedid := ""
+		if x, found := idCache.Get(cik + "/" + filingid); found {
+			cachedid = x.(string)
+		}
+		idlock.RUnlock()
 		data := map[string]string{
 			"AccessionNumber": filingid,
 			"Cik":             cik,
 		}
 		importTmpl.Execute(w, data)
-		//todo websockets
 		go func() {
-			serializables.Download(
-				"https://www.sec.gov/Archives/edgar/data/"+cik+"/"+filingid,
-				WorkingDirectoryPath, GlobalTaxonomySetPath, throttle.Throttle)
+			if cachedid != "" {
+				return
+			} else {
+				id, err := serializables.Download(
+					"https://www.sec.gov/Archives/edgar/data/"+cik+"/"+filingid,
+					WorkingDirectoryPath, GlobalTaxonomySetPath, throttle.Throttle)
+				if err != nil {
+					fmt.Printf("%v", err)
+					return
+				}
+				idlock.Lock()
+				defer idlock.Unlock()
+				idCache.Set(cik+"/"+filingid, id, gocache.DefaultExpiration)
+				pathCache.Set(id, mypath, gocache.DefaultExpiration)
+			}
 		}()
 	})
 	r.Path("/company-search").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

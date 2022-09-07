@@ -3,10 +3,32 @@
 	<head>
 		<meta charset="UTF-8">
 		<title>EDGAR Browser - ECKSBEE</title>
+		<script type="text/javascript">
+		window.onload = function () {
+			var conn;
+			var msg = document.getElementById("msg");
+			msg.innerText = "Importing..."
+			fetch('/{{.Cik}}/{{.AccessionNumber}}/hash').then(
+				(response) => {
+					if (!response.ok) {
+						msg.innerText = "Import failed!";
+						return;
+					}
+					return response.json();
+				}
+			).then(
+				(data) => {
+					msg.innerText = "hash is " + data.hash;
+					window.location.replace("/review/" + data.hash);
+				}
+			)
+  			.catch((error) => console.error(error));
+		};
+		</script>
 	</head>
 	<body>
-		<h1>Importing</h1>
-		<h2>{{.Cik}}</h2>
-		<p>{{.AccessionNumber}}</p>
+		<div>
+			<h1 id="msg">...</h1>
+		<div>
 	</body>
 </html>
