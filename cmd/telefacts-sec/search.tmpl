@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>EDGAR Browser powered by TeleFacts, an ECKSBEE software</title>
+	</head>
+	<body>
+		<div>
+			<h1>Results for {{.SearchText}}</h1>
+			<ul>
+				{{range .Results}}
+						<li>
+							<h2>{{.Title}}</h2>
+							<p>
+								{{.Summary}}
+								<a href="/import?path={{.PercentEncodedEdgarUrl}}">Browse</a>
+							</p>
+						</li>
+				{{end}}
+			</ul>
+		</div>
+	</body>
+</html>

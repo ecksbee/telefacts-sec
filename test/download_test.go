@@ -21,7 +21,7 @@ func testDownloadGoFiler(t *testing.T) {
 	dir, _ := os.Getwd()
 	wd := filepath.Join(dir, "wd")
 	gts := filepath.Join(dir, "gts")
-	err := serializables.Download(
+	_, err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/843006/000165495420001999",
 		wd, gts, throttle.Throttle)
 	if err != nil {
@@ -33,7 +33,7 @@ func testDownloadThunderDome(t *testing.T) {
 	dir, _ := os.Getwd()
 	wd := filepath.Join(dir, "wd")
 	gts := filepath.Join(dir, "gts")
-	err := serializables.Download(
+	_, err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/69891/000143774920014395",
 		wd, gts, throttle.Throttle)
 	if err != nil {
@@ -45,7 +45,7 @@ func testDownloadWDesk(t *testing.T) {
 	dir, _ := os.Getwd()
 	wd := filepath.Join(dir, "wd")
 	gts := filepath.Join(dir, "gts")
-	err := serializables.Download(
+	_, err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/1445305/000144530520000124",
 		wd, gts, throttle.Throttle)
 	if err != nil {
@@ -57,7 +57,7 @@ func testDownloadWDesk2(t *testing.T) {
 	dir, _ := os.Getwd()
 	wd := filepath.Join(dir, "wd")
 	gts := filepath.Join(dir, "gts")
-	err := serializables.Download(
+	_, err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/0001058090/000105809020000020",
 		wd, gts, throttle.Throttle)
 	if err != nil {

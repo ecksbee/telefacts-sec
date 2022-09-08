@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 
 	"ecksbee.com/telefacts-sec/internal/actions"
@@ -24,14 +25,14 @@ const calExt = "_cal.xml"
 const labExt = "_lab.xml"
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
 
-func Download(filingURL string, wd string, gts string, throttle func(string)) error {
+func Download(filingURL string, wd string, gts string, throttle func(string)) (string, error) {
 	isSEC, _ := regexp.MatchString(regexSEC, filingURL)
 	if !isSEC {
-		return fmt.Errorf("not an acceptable SEC address, " + filingURL)
+		return "", fmt.Errorf("not an acceptable SEC address, " + filingURL)
 	}
 	body, err := actions.Scrape(filingURL+"/FilingSummary.xml", throttle)
 	if err != nil {
-		return err
+		return "", err
 	}
 	reader := bytes.NewReader(body)
 	decoder := xml.NewDecoder(reader)
@@ -39,7 +40,7 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) er
 	filingSummary := FilingSummary{}
 	err = decoder.Decode(&filingSummary)
 	if len(filingSummary.InputFiles) <= 0 || len(filingSummary.InputFiles[0].File) <= 0 || err != nil {
-		return fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
+		return "", fmt.Errorf("empty filing at "+filingURL+". %s\n\n%v", string(body), err)
 	}
 	entry := filingSummary.GetInstance()
 	srcDoc := filingSummary.GetIxbrl()
@@ -48,7 +49,7 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) er
 	}
 	err = os.MkdirAll(filepath.Join(wd, "folders"), 0755)
 	if err != nil {
-		return err
+		return "", err
 	}
 	underscore.WorkingDirectoryPath = wd
 	id, err := underscore.NewFolder(underscore.Underscore{
@@ -56,7 +57,7 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) er
 		Note:  filingURL,
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 	workingDir := filepath.Join(wd, "folders", id)
 	var wg sync.WaitGroup
@@ -85,6 +86,11 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) er
 		targetUrl := filingURL + "/" + entry
 		dest := path.Join(workingDir, entry)
 		err = scrapeAndWrite(targetUrl, dest, throttle)
+		if srcDoc == entry {
+			insDoc := strings.Replace(srcDoc, ".htm", "_htm", 1)
+			targetUrl = filingURL + "/" + insDoc + ".xml"
+			err = scrapeAndWrite(targetUrl, dest+".xml", throttle)
+		}
 	}()
 	go func() {
 		defer wg.Done()
@@ -115,7 +121,7 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) er
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	wg.Wait()
-	return err
+	return id, err
 }
 
 func scrapeAndWrite(url string, dest string, throttle func(string)) error {

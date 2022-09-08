@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>EDGAR Browser powered by TeleFacts, an ECKSBEE software</title>
+	</head>
+	<body>
+		<div>
+			<h1>EDGAR Browser</h1>
+			<form action="/company-search" method="POST">
+				<label for="company-name">Search company:</label>
+				<input type="text" id="company-name" name="company-name">
+				<label for="form-type">Select form type:</label>
+				<select name="form-type" id="form-type">
+					<option value="8-k">8K</option>
+					<option value="10-k">10-K</option>
+					<option value="10-q">10-Q</option>
+					<option value="485bpos">485BPOS</option>
+				</select>
+				<input type="submit" value="Submit">
+			</form>
+		</div>
+	</body>
+</html>

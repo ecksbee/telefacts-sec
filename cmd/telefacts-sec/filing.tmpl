@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>EDGAR Browser - ECKSBEE</title>
+	</head>
+	<body>
+		<div style="position:fixed;left:0;top:0;height:5vh;width:100vw;border:none;">
+			<p>Source: <a href="https://www.sec.gov/{{.Path}}">https://www.sec.gov</a></p>
+		</div>
+		<iframe src="/browser/?id={{.Hash}}" style="position:fixed;left:0;bottom:0;height:95vh;width:100vw;border:none;" title="Concept Network Browser, powered by TeleFacts"></iframe>
+	</body>
+</html>
