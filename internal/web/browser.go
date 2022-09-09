@@ -151,7 +151,6 @@ func Navigate(r *mux.Router) {
 			return
 		}
 		<-time.After(2 * time.Second)
-		idlock.RLock()
 		cachedid := ""
 		vars := mux.Vars(r)
 		cik := vars["cik"]
@@ -165,6 +164,7 @@ func Navigate(r *mux.Router) {
 			})
 			if err != nil {
 				http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+				idlock.RUnlock()
 				return
 			}
 			w.WriteHeader(http.StatusOK)
