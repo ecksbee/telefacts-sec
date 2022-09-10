@@ -13,7 +13,7 @@ do
         output_name+='.exe'
     fi
 
-    env GOOS=$GOOS GOARCH=$GOARCH go build -o $output_name ../cmd/telefacts/main.go
+    env GOOS=$GOOS GOARCH=$GOARCH go build -o $output_name ../cmd/telefacts-sec/main.go
     if [ $? -ne 0 ]; then
         echo 'Error!'
         exit 1
