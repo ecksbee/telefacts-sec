@@ -131,7 +131,6 @@ func Navigate(r *mux.Router) {
 		hash := vars["hash"]
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
-		idlock.RLock()
 		mypath := "404"
 		idlock.RLock()
 		if path, found := pathCache.Get(hash); found {
