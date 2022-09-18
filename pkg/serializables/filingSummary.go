@@ -16,6 +16,14 @@ type FilingSummary struct {
 			CharData string     `xml:",chardata"`
 		} `xml:"File"`
 	} `xml:"InputFiles"`
+	SupplementalFiles []struct {
+		XMLName xml.Name
+		File    []struct {
+			XMLName  xml.Name
+			XMLAttrs []xml.Attr `xml:",any,attr"`
+			CharData string     `xml:",chardata"`
+		} `xml:"File"`
+	} `xml:"SupplementalFiles"`
 }
 
 func (fs *FilingSummary) GetIxbrl() string {
@@ -48,6 +56,21 @@ func (fs *FilingSummary) GetInstance() string {
 		}
 	}
 	return ""
+}
+
+func (fs *FilingSummary) GetImages() []string {
+	ret := make([]string, 0)
+	for _, f := range fs.SupplementalFiles[0].File {
+		s := f.CharData
+		ext := filepath.Ext(s)
+		for _, test := range imgExts {
+			if ext == test {
+				ret = append(ret, s)
+				break
+			}
+		}
+	}
+	return ret
 }
 
 func (fs *FilingSummary) GetTicker() string {
@@ -153,4 +176,17 @@ func (fs *FilingSummary) GetPresentationLinkbase() string {
 		}
 	}
 	return ""
+}
+
+func (fs *FilingSummary) GetSupplementalFiles() []string {
+	ticker := fs.GetTicker()
+	if len(ticker) <= 0 {
+		return []string{}
+	}
+	ret := make([]string, 0)
+	for _, f := range fs.SupplementalFiles[0].File {
+		s := f.CharData
+		ret = append(ret, s)
+	}
+	return ret
 }
