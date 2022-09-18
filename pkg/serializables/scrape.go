@@ -36,6 +36,7 @@ func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 	defItem := filingSummary.GetDefinitionLinkbase()
 	calItem := filingSummary.GetCalculationLinkbase()
 	labItem := filingSummary.GetLabelLinkbase()
+	imageItems := filingSummary.GetImages()
 	var wg sync.WaitGroup
 	wg.Add(6)
 	var (
@@ -86,7 +87,24 @@ func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return zipData([]struct {
+	images := []struct {
+		Name string
+		Body []byte
+	}{}
+	for _, imageItem := range imageItems {
+		targetUrl := filingURL + "/" + imageItem
+		image, err := actions.Scrape(targetUrl, throttle)
+		if err == nil {
+			images = append(images, struct {
+				Name string
+				Body []byte
+			}{
+				Name: imageItem,
+				Body: image,
+			})
+		}
+	}
+	return zipData(append([]struct {
 		Name string
 		Body []byte
 	}{
@@ -97,7 +115,7 @@ func Scrape(filingURL string, throttle func(string)) ([]byte, error) {
 		{defItem, definition},
 		{calItem, calculation},
 		{labItem, label},
-	})
+	}, images...))
 }
 
 func zipData(files []struct {

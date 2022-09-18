@@ -23,6 +23,14 @@ const preExt = "_pre.xml"
 const defExt = "_def.xml"
 const calExt = "_cal.xml"
 const labExt = "_lab.xml"
+
+var imgExts = []string{
+	".jpg",
+	".jpeg",
+	".png",
+	".svg",
+}
+
 const regexSEC = "https://www.sec.gov/Archives/edgar/data/([0-9]+)/([0-9]+)"
 
 func Download(filingURL string, wd string, gts string, throttle func(string)) (string, error) {
@@ -121,6 +129,12 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) (s
 		err = scrapeAndWrite(targetUrl, dest, throttle)
 	}()
 	wg.Wait()
+	images := filingSummary.GetImages()
+	for _, image := range images {
+		targetUrl := filingURL + "/" + image
+		dest := path.Join(workingDir, image)
+		err = scrapeAndWrite(targetUrl, dest, throttle)
+	}
 	return id, err
 }
 
