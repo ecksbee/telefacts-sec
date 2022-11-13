@@ -16,3 +16,7 @@ func MarshalRenderable(id string, hash string) ([]byte, error) {
 func MarshalCatalog(id string) ([]byte, error) {
 	return cache.MarshalCatalog(id)
 }
+
+func MarshalExpressable(id string, name string, contextref string) ([]byte, error) {
+	return cache.MarshalExpressable(id, name, contextref)
+}
