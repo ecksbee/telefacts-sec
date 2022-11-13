@@ -48,7 +48,7 @@ func Renderable() func(http.ResponseWriter, *http.Request) {
 			return
 		}
 
-		data, err := cache.Marshal(id, hash)
+		data, err := cache.MarshalRenderable(id, hash)
 		if err != nil {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
