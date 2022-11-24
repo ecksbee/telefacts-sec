@@ -2,7 +2,7 @@ module ecksbee.com/telefacts-sec
 
 go 1.16
 
-replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20221105
+replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20221115
 
 replace ecksbee.com/telefacts-taxonomy-package => github.com/ecksbee/telefacts-taxonomy-package v0.1.4
 
