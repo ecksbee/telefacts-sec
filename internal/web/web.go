@@ -65,15 +65,12 @@ func newRouter() http.Handler {
 	hydratables.HydrateUnitTypeRegistry()
 	r := mux.NewRouter()
 	r.StrictSlash(true)
-	Navigate(r)
+	ServeApi(r)
 	Render(r)
 	conceptnetworkbrowser := http.FileServer(http.Dir((filepath.Join(wd, "wd", "goldlord-midas"))))
 	r.PathPrefix("/browser").Handler(http.StripPrefix("/browser", conceptnetworkbrowser))
-	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/html")
-		homeTmpl.Execute(w, nil)
-	})
+	edgarbrowser := http.FileServer(http.Dir((filepath.Join(wd, "wd", "snakebane-patrick"))))
+	r.PathPrefix("/").Handler(http.StripPrefix("/", edgarbrowser))
 	return r
 }
 

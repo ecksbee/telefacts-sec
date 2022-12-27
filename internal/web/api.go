@@ -4,11 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
-	"html/template"
 	"net/http"
 	neturl "net/url"
-	"os"
 	"path"
 	"strconv"
 	"sync"
@@ -22,10 +19,6 @@ import (
 	"golang.org/x/net/html/charset"
 )
 
-var homeTmpl *template.Template
-var searchTmpl *template.Template
-var importTmpl *template.Template
-var filingTmpl *template.Template
 var WorkingDirectoryPath string
 var GlobalTaxonomySetPath string
 
@@ -83,77 +76,46 @@ type SearchResult struct {
 }
 
 var (
-	idlock    sync.RWMutex
-	idonce    sync.Once
-	idCache   *gocache.Cache
-	pathCache *gocache.Cache
+	idlock  sync.RWMutex
+	idonce  sync.Once
+	idCache *gocache.Cache
 )
 
 func NewIdCache() *gocache.Cache {
 	idonce.Do(func() {
 		idCache = gocache.New(gocache.NoExpiration, gocache.NoExpiration)
-		pathCache = gocache.New(gocache.NoExpiration, gocache.NoExpiration)
 	})
 	return idCache
 }
 
 func init() {
-	dir, err := os.Getwd()
-	if err != nil {
-		panic(err)
-	}
-	filingTmpl, err = template.ParseFiles(path.Join(dir, "filing.tmpl"))
-	if err != nil {
-		panic(err)
-	}
-	homeTmpl, err = template.ParseFiles(path.Join(dir, "home.tmpl"))
-	if err != nil {
-		panic(err)
-	}
-	searchTmpl, err = template.ParseFiles(path.Join(dir, "search.tmpl"))
-	if err != nil {
-		panic(err)
-	}
-	importTmpl, err = template.ParseFiles(path.Join(dir, "import.tmpl"))
-	if err != nil {
-		panic(err)
-	}
 	throttle.StartSECThrottle()
 }
 
-func Navigate(r *mux.Router) {
-	r.Path("/review/{hash}").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func ServeApi(r *mux.Router) {
+	r.Path("/hash").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
 			return
 		}
-		vars := mux.Vars(r)
-		hash := vars["hash"]
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/html")
-		mypath := "404"
-		idlock.RLock()
-		if path, found := pathCache.Get(hash); found {
-			mypath = path.(string)
-		}
-		idlock.RUnlock()
-		data := map[string]string{
-			"Hash": hash,
-			"Path": mypath,
-		}
-		filingTmpl.Execute(w, data)
-	})
-	r.Path("/{cik}/{filingid}/hash").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-
-		if r.Method != http.MethodGet {
-			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
+		parsedquery, err := neturl.ParseQuery(r.URL.RawQuery)
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		<-time.After(2 * time.Second)
+		mypath, err := neturl.QueryUnescape(parsedquery.Get("path"))
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if mypath == "" {
+			http.Error(w, "no path parameter", http.StatusBadRequest)
+			return
+		}
+		trunc := path.Dir(mypath)
+		filingid := path.Base(trunc)
+		cik := path.Base(path.Dir(trunc))
 		cachedid := ""
-		vars := mux.Vars(r)
-		cik := vars["cik"]
-		filingid := vars["filingid"]
 		cachekey := cik + "/" + filingid
 		idlock.RLock()
 		if x, found := idCache.Get(cachekey); found {
@@ -173,65 +135,40 @@ func Navigate(r *mux.Router) {
 			return
 		}
 		idlock.RUnlock()
-		w.WriteHeader(http.StatusNotFound)
-	})
-	r.Path("/import").Methods("GET").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method != http.MethodGet {
-			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
-			return
-		}
-		parsedquery, err := neturl.ParseQuery(r.URL.RawQuery)
+		id, err := serializables.Download(
+			"https://www.sec.gov/Archives/edgar/data/"+cik+"/"+filingid,
+			WorkingDirectoryPath, GlobalTaxonomySetPath, throttle.Throttle)
 		if err != nil {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		mypath, err := neturl.QueryUnescape(parsedquery.Get("path"))
+		idlock.Lock()
+		defer idlock.Unlock()
+		idCache.Set(cik+"/"+filingid, id, gocache.DefaultExpiration)
+		data, err := json.Marshal(map[string]string{
+			"hash": id,
+		})
 		if err != nil {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		trunc := path.Dir(mypath)
-		filingid := path.Base(trunc)
-		cik := path.Base(path.Dir(trunc))
 		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/html")
-		idlock.RLock()
-		cachedid := ""
-		if x, found := idCache.Get(cik + "/" + filingid); found {
-			cachedid = x.(string)
-		}
-		idlock.RUnlock()
-		data := map[string]string{
-			"AccessionNumber": filingid,
-			"Cik":             cik,
-		}
-		importTmpl.Execute(w, data)
-		go func() {
-			if cachedid != "" {
-				return
-			} else {
-				id, err := serializables.Download(
-					"https://www.sec.gov/Archives/edgar/data/"+cik+"/"+filingid,
-					WorkingDirectoryPath, GlobalTaxonomySetPath, throttle.Throttle)
-				if err != nil {
-					fmt.Printf("%v", err)
-					return
-				}
-				idlock.Lock()
-				defer idlock.Unlock()
-				idCache.Set(cik+"/"+filingid, id, gocache.DefaultExpiration)
-				pathCache.Set(id, mypath, gocache.DefaultExpiration)
-			}
-		}()
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(data)
 	})
 	r.Path("/company-search").Methods("POST").HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, "Error: incorrect verb, "+r.Method, http.StatusInternalServerError)
 			return
 		}
-		r.ParseForm()
-		search := r.Form["company-name"]
-		typeid := r.Form["form-type"]
+		r.ParseMultipartForm(1024 * 8)
+		search := r.PostForm["company-name"]
+		typeid := r.PostForm["form-type"]
+		if len(search) <= 0 || len(typeid) <= 0 {
+			http.Error(w, "Missing parameters, company-name or form-type", http.StatusBadRequest)
+			w.Header().Set("Content-Type", "text/plaint")
+			return
+		}
 		y := time.Now().Year()
 		edgarSearchText := `company-name%3D"` + neturl.QueryEscape(search[0]) + `"%20AND%20form-type%3D%28` + neturl.QueryEscape(typeid[0]) + `%2A%29`
 		queryText := `text=` + edgarSearchText + `&start=1&count=80&first=` + strconv.Itoa(y) + `&last=1994&output=atom`
@@ -255,8 +192,6 @@ func Navigate(r *mux.Router) {
 			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
-		w.WriteHeader(http.StatusOK)
-		w.Header().Set("Content-Type", "text/html")
 		data := SearchResult{
 			SearchText: search[0],
 			Results: make([]struct {
@@ -291,6 +226,14 @@ func Navigate(r *mux.Router) {
 				PercentEncodedEdgarUrl: neturl.QueryEscape(edgarUrl),
 			})
 		}
-		searchTmpl.Execute(w, data)
+		ret, err := json.Marshal(data)
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+			idlock.RUnlock()
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(ret)
 	})
 }
