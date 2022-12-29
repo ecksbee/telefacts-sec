@@ -8,6 +8,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o /mybuild/main /mybuild/cmd/telefacts-se
 
 FROM ghcr.io/ecksbee/goldlord-midas:main as spa
 
+FROM ghcr.io/ecksbee/snakebane-patrick:main as ssg
+
 FROM ghcr.io/ecksbee/sec-testdata:main as secdata
 
 FROM alpine:latest
@@ -15,11 +17,8 @@ RUN apk --update add ca-certificates
 COPY --from=secdata /wd /wd
 COPY --from=secdata /gts /gts
 COPY --from=builder /mybuild/main /
-COPY --from=builder /mybuild/cmd/telefacts-sec/filing.tmpl /
-COPY --from=builder /mybuild/cmd/telefacts-sec/home.tmpl /
-COPY --from=builder /mybuild/cmd/telefacts-sec/import.tmpl /
-COPY --from=builder /mybuild/cmd/telefacts-sec/search.tmpl /
 COPY --from=spa / /wd/goldlord-midas
+COPY --from=ssg / /wd/snakebane-patrick
 WORKDIR /
 RUN chown -R 1000:1000 /wd
 RUN chown -R 1000:1000 /gts
