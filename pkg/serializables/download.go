@@ -3,6 +3,7 @@ package serializables
 import (
 	"bytes"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
 	"path"
@@ -60,11 +61,14 @@ func Download(filingURL string, wd string, gts string, throttle func(string)) (s
 		return "", err
 	}
 	underscore.WorkingDirectoryPath = wd
-	id, err := underscore.NewFolder(underscore.Underscore{
+	id, err := underscore.NewFolder(filingURL, underscore.Underscore{
 		Entry: entry,
 		Note:  filingURL,
 	})
 	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return id, nil
+		}
 		return "", err
 	}
 	workingDir := filepath.Join(wd, "folders", id)
