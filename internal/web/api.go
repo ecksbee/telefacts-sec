@@ -164,14 +164,24 @@ func ServeApi(r *mux.Router) {
 		r.ParseMultipartForm(1024 * 8)
 		search := r.PostForm["company-name"]
 		typeid := r.PostForm["form-type"]
-		if len(search) <= 0 || len(typeid) <= 0 {
-			http.Error(w, "Missing parameters, company-name or form-type", http.StatusBadRequest)
-			w.Header().Set("Content-Type", "text/plaint")
+		yearVal := r.PostForm["year"]
+		if len(search) <= 0 || len(typeid) <= 0 || len(yearVal) <= 0 {
+			http.Error(w, "Missing parameters: company-name, year, or form-type", http.StatusBadRequest)
+			w.Header().Set("Content-Type", "text/plain")
 			return
 		}
-		y := time.Now().Year()
+		year, err := strconv.Atoi(yearVal[0])
+		if err != nil {
+			http.Error(w, "Error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if year > time.Now().Year() {
+			http.Error(w, "Invalid year value", http.StatusBadRequest)
+			w.Header().Set("Content-Type", "text/plain")
+			return
+		}
 		edgarSearchText := `company-name%3D"` + neturl.QueryEscape(search[0]) + `"%20AND%20form-type%3D%28` + neturl.QueryEscape(typeid[0]) + `%2A%29`
-		queryText := `text=` + edgarSearchText + `&start=1&count=80&first=` + strconv.Itoa(y) + `&last=1994&output=atom`
+		queryText := `text=` + edgarSearchText + `&start=1&count=80&first=` + yearVal[0] + `&last=1994&output=atom`
 		finalUrl := neturl.URL{
 			Scheme:   `https`,
 			Host:     `www.sec.gov`,
