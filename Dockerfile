@@ -17,11 +17,13 @@ RUN apk --update add ca-certificates
 COPY --from=secdata /wd /wd
 COPY --from=secdata /gts /gts
 COPY --from=builder /mybuild/main /
-COPY --from=spa / /wd/goldlord-midas
-COPY --from=ssg / /wd/snakebane-patrick
+COPY --from=spa / /goldlord-midas
+COPY --from=ssg / /snakebane-patrick
 WORKDIR /
 RUN chown -R 1000:1000 /wd
 RUN chown -R 1000:1000 /gts
+RUN chown -R 1000:1000 /goldlord-midas
+RUN chown -R 1000:1000 /snakebane-patrick
 USER 1000
 EXPOSE 8080
 ENTRYPOINT ["./main"]

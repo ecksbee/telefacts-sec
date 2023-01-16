@@ -67,9 +67,9 @@ func newRouter() http.Handler {
 	r.StrictSlash(true)
 	ServeApi(r)
 	Render(r)
-	conceptnetworkbrowser := http.FileServer(http.Dir((filepath.Join(wd, "wd", "goldlord-midas"))))
+	conceptnetworkbrowser := http.FileServer(http.Dir((filepath.Join(wd, "goldlord-midas"))))
 	r.PathPrefix("/browser").Handler(http.StripPrefix("/browser", conceptnetworkbrowser))
-	edgarbrowser := http.FileServer(http.Dir((filepath.Join(wd, "wd", "snakebane-patrick"))))
+	edgarbrowser := http.FileServer(http.Dir((filepath.Join(wd, "snakebane-patrick"))))
 	r.PathPrefix("/").Handler(http.StripPrefix("/", edgarbrowser))
 	return r
 }
