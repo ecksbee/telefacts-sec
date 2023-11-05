@@ -1,2 +1,2 @@
 # telefacts-sec
-SEC scraper for TeleFacts
+the EDGARBrowser server | SEC scraper for TeleFacts
