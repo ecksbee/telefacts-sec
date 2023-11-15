@@ -18,6 +18,8 @@
 /test/gts/**
 /cmd/telefacts-sec/wd/**
 /cmd/telefacts-sec/gts/**
+/cmd/telefacts-sec/snakebane-patrick/**
+/cmd/telefacts-sec/goldlord-midas/**
 /wd/**
 /gts/**
 /snakebane-patrick/**

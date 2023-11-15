@@ -31,7 +31,7 @@ func setupServer() *http.Server {
 	NewIdCache()
 	r := newRouter()
 
-	fmt.Println("telefacts-sec-browser<-0.0.0.0:8080")
+	fmt.Println("EDGARBrowser<-0.0.0.0:8080")
 	return &http.Server{
 		Addr:         "0.0.0.0:8080",
 		WriteTimeout: time.Second * 15,
