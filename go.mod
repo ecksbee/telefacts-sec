@@ -2,13 +2,13 @@ module ecksbee.com/telefacts-sec
 
 go 1.16
 
-replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20231113
+replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20231122
 
-replace ecksbee.com/telefacts-taxonomy-package => github.com/ecksbee/telefacts-taxonomy-package v0.1.6
+replace ecksbee.com/kushim => github.com/ecksbee/kushim v0.0.0-20231122
 
 require (
+	ecksbee.com/kushim v0.0.0
 	ecksbee.com/telefacts v0.0.0
-	ecksbee.com/telefacts-taxonomy-package v0.0.0
 	github.com/gorilla/mux v1.8.0
 	github.com/joshuanario/r8lmt v0.0.0-20190907165225-782e183364f7
 	github.com/patrickmn/go-cache v2.1.0+incompatible

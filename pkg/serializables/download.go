@@ -12,8 +12,8 @@ import (
 	"strings"
 	"sync"
 
+	"ecksbee.com/kushim/pkg/taxonomies"
 	"ecksbee.com/telefacts-sec/internal/actions"
-	"ecksbee.com/telefacts-taxonomy-package/pkg/taxonomies"
 	underscore "ecksbee.com/telefacts/pkg/serializables"
 	"golang.org/x/net/html/charset"
 )
