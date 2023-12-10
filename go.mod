@@ -2,7 +2,7 @@ module ecksbee.com/telefacts-sec
 
 go 1.16
 
-replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20231122
+replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20231210
 
 replace ecksbee.com/kushim => github.com/ecksbee/kushim v0.0.0-20231122
 
