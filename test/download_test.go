@@ -16,6 +16,7 @@ func TestAllDownloads(t *testing.T) {
 	testDownloadWDesk(t)
 	testDownloadWDesk2(t)
 	testDownloadImages(t)
+	testDownloadWDesk3(t)
 }
 
 func testDownloadGoFiler(t *testing.T) {
@@ -60,6 +61,18 @@ func testDownloadWDesk2(t *testing.T) {
 	gts := filepath.Join(dir, "gts")
 	_, err := serializables.Download(
 		"https://www.sec.gov/Archives/edgar/data/0001058090/000105809020000020",
+		wd, gts, throttle.Throttle)
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+}
+
+func testDownloadWDesk3(t *testing.T) {
+	dir, _ := os.Getwd()
+	wd := filepath.Join(dir, "wd")
+	gts := filepath.Join(dir, "gts")
+	_, err := serializables.Download(
+		"https://www.sec.gov/Archives/edgar/data/1445305/000144530522000110",
 		wd, gts, throttle.Throttle)
 	if err != nil {
 		t.Fatalf(err.Error())
