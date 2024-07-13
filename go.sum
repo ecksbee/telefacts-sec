@@ -2,10 +2,10 @@ github.com/antchfx/xmlquery v1.3.10 h1:U2yMwr8U0KmGM2iDG2Ky/3LfxNsiK4uw1bSBkeMO9
 github.com/antchfx/xmlquery v1.3.10/go.mod h1:wojC/BxjEkjJt6dPiAqUzoXO5nIMWtxHS8PD8TmN4ks=
 github.com/antchfx/xpath v1.2.0 h1:mbwv7co+x0RwgeGAOHdrKy89GvHaGvxxBtPK0uF9Zr8=
 github.com/antchfx/xpath v1.2.0/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
-github.com/ecksbee/kushim v0.0.0-20231122 h1:UeLg/riNPOibbuMkAM1xvDMmzv2GzUx8sJopjlkwGh4=
-github.com/ecksbee/kushim v0.0.0-20231122/go.mod h1:09hjyC/HHX7P6OzSlA2Dg9tM4QJTCXmEcsUAyMTdBAg=
 github.com/ecksbee/telefacts v0.0.0-20240128 h1:cHf/X/AyPuMlqh99kb5mCGAEdb6ZlV6jHo8Li0Npngg=
 github.com/ecksbee/telefacts v0.0.0-20240128/go.mod h1:9iYTLt3msGJLrSdNtjRMf28pAR8EqRdasNiCbX4J5TU=
+github.com/ecksbee/telefacts-taxonomy-package v0.1.6 h1:bnD5K4D11fxsNKXomYrSI0cPshHkbfWqUqaz0bL/e2w=
+github.com/ecksbee/telefacts-taxonomy-package v0.1.6/go.mod h1:jXUsqUGgQlTGPjZsCwkmZTNFznHgn8t9zWFIRzeN8K4=
 github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e h1:1r7pUrabqp18hOBcwBwiTsbnFeTZHV9eER/QT5JVZxY=
 github.com/golang/groupcache v0.0.0-20200121045136-8c9f03a8e57e/go.mod h1:cIg4eruTrX1D+g88fzRXU5OdNfaM+9IcxsU14FzY7Hc=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=
