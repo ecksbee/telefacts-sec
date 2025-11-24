@@ -4,7 +4,7 @@ go 1.22
 
 toolchain go1.22.0
 
-replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20240713
+replace ecksbee.com/telefacts => github.com/ecksbee/telefacts v0.0.0-20251123
 
 replace ecksbee.com/telefacts-taxonomy-package => github.com/ecksbee/telefacts-taxonomy-package v0.1.6
 
